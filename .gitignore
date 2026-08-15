@@ -1,0 +1,9 @@
+out/
+cache/
+broadcast/
+lib/
+.env
+.env.deployer
+.env.deployer2
+.DS_Store
+.env.deployer3
