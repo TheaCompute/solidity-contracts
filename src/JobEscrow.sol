@@ -155,6 +155,7 @@ contract JobEscrow is IJobEscrow, Ownable {
     /// @inheritdoc IJobEscrow
     function settleEscrow(bytes32 jobId, address worker, uint256 workerBps) external {
         if (msg.sender != settlement) revert Unauthorized();
+        if (worker == address(0)) revert ZeroAddress();
         if (workerBps > BPS_DENOMINATOR) revert PayoutMismatch();
 
         Escrow storage escrow = escrows[jobId];
@@ -210,6 +211,7 @@ contract JobEscrow is IJobEscrow, Ownable {
         external
         onlyOwner
     {
+        if (worker == address(0)) revert ZeroAddress();
         Escrow storage escrow = escrows[jobId];
         if (escrow.status != EscrowStatus.Locked) revert InvalidStatus();
 
@@ -226,6 +228,7 @@ contract JobEscrow is IJobEscrow, Ownable {
 
     /// @notice Withdraw accrued treasury USDG. Owner only.
     function withdrawTreasury(address to, uint256 amount) external onlyOwner {
+        if (to == address(0)) revert ZeroAddress();
         if (amount == 0) revert ZeroAmount();
         if (amount > treasuryBalance) revert InsufficientTreasury();
         treasuryBalance -= amount;

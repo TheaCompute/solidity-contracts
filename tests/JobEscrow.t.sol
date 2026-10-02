@@ -510,4 +510,28 @@ contract JobEscrowTest is Test {
         vm.expectRevert(Ownable.Unauthorized.selector);
         escrow.setIntakePaused(true);
     }
+
+    function test_RevertWhen_SettleEscrowToZeroWorker() public {
+        _deposit(50_000_000);
+        bytes32 jobId = bytes32(uint256(300));
+        _lock(jobId, IJobEscrow.ModelTier.Lite);
+
+        vm.prank(settlement);
+        vm.expectRevert(Ownable.ZeroAddress.selector);
+        escrow.settleEscrow(jobId, address(0), 7_500);
+    }
+
+    function test_RevertWhen_SettleAndPayToZeroWorker() public {
+        _deposit(50_000_000);
+        bytes32 jobId = bytes32(uint256(301));
+        _lock(jobId, IJobEscrow.ModelTier.Lite);
+
+        vm.expectRevert(Ownable.ZeroAddress.selector);
+        escrow.settleAndPay(jobId, address(0), 15_000, 5_000);
+    }
+
+    function test_RevertWhen_WithdrawTreasuryToZeroAddress() public {
+        vm.expectRevert(Ownable.ZeroAddress.selector);
+        escrow.withdrawTreasury(address(0), 1);
+    }
 }
