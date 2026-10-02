@@ -25,6 +25,9 @@ contract WorkerRegistry is IWorkerRegistry, Ownable {
     uint8 public constant TIER_PRO = 0x04;
     uint8 public constant TIER_MAX = 0x08;
 
+    /// @notice Longest GPU model label a worker can store, in bytes.
+    uint256 public constant GPU_MODEL_MAX = 64;
+
     // ---------------------------------------------------------------------
     // Storage
     // ---------------------------------------------------------------------
@@ -72,6 +75,8 @@ contract WorkerRegistry is IWorkerRegistry, Ownable {
     error InvalidTierMask();
     error AlreadyRegistered();
     error NotRegistered();
+    /// @notice GPU model label exceeds GPU_MODEL_MAX bytes.
+    error GpuModelTooLong();
 
     // ---------------------------------------------------------------------
     // Admin wiring
@@ -96,6 +101,7 @@ contract WorkerRegistry is IWorkerRegistry, Ownable {
     /// @notice Register the caller as a worker node.
     function registerWorker(uint8 tierMask, string calldata gpuModel) external {
         _validateTierMask(tierMask);
+        _validateGpuModel(gpuModel);
 
         Worker storage worker = workers[msg.sender];
         if (worker.registered) revert AlreadyRegistered();
@@ -114,6 +120,7 @@ contract WorkerRegistry is IWorkerRegistry, Ownable {
     /// @notice Change the caller's supported tiers, GPU model, and active flag.
     function updateWorker(uint8 tierMask, string calldata gpuModel, bool active) external {
         _validateTierMask(tierMask);
+        _validateGpuModel(gpuModel);
 
         Worker storage worker = workers[msg.sender];
         if (!worker.registered) revert NotRegistered();
@@ -222,6 +229,10 @@ contract WorkerRegistry is IWorkerRegistry, Ownable {
     function _validateTierMask(uint8 tierMask) internal pure {
         if (tierMask == 0) revert NoTiersDeclared();
         if (tierMask > 0x0F) revert InvalidTierMask();
+    }
+
+    function _validateGpuModel(string calldata gpuModel) internal pure {
+        if (bytes(gpuModel).length > GPU_MODEL_MAX) revert GpuModelTooLong();
     }
 
     /// @dev Latency at or under 500ms scores full marks; 5000ms or above scores

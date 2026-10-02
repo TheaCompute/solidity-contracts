@@ -287,4 +287,21 @@ contract WorkerRegistryTest is Test {
         vm.prank(settlement);
         registry.recordCompletion(workerNode, false, 0);
     }
+
+    function test_RejectsGpuModelOverMaximumLength() public {
+        string memory tooLong = string(new bytes(registry.GPU_MODEL_MAX() + 1));
+
+        vm.prank(workerNode);
+        vm.expectRevert(WorkerRegistry.GpuModelTooLong.selector);
+        registry.registerWorker(TIER_LITE, tooLong);
+    }
+
+    function test_RejectsGpuModelOverMaximumLengthOnUpdate() public {
+        _registerDefaultWorker();
+        string memory tooLong = string(new bytes(registry.GPU_MODEL_MAX() + 1));
+
+        vm.prank(workerNode);
+        vm.expectRevert(WorkerRegistry.GpuModelTooLong.selector);
+        registry.updateWorker(TIER_LITE, tooLong, true);
+    }
 }
