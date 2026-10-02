@@ -534,4 +534,22 @@ contract JobEscrowTest is Test {
         vm.expectRevert(Ownable.ZeroAddress.selector);
         escrow.withdrawTreasury(address(0), 1);
     }
+
+    function test_IsRefundableTracksTimeoutAndStatus() public {
+        _deposit(50_000_000);
+        bytes32 jobId = bytes32(uint256(310));
+        _lock(jobId, IJobEscrow.ModelTier.Lite);
+
+        assertFalse(escrow.isRefundable(jobId));
+
+        vm.warp(block.timestamp + JOB_TIMEOUT_SECONDS);
+        assertTrue(escrow.isRefundable(jobId));
+
+        escrow.refundEscrow(jobId);
+        assertFalse(escrow.isRefundable(jobId));
+    }
+
+    function test_IsRefundableFalseForUnknownJob() public view {
+        assertFalse(escrow.isRefundable(bytes32(uint256(311))));
+    }
 }

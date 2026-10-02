@@ -283,4 +283,12 @@ contract JobEscrow is IJobEscrow, Ownable {
     function escrowExpiresAt(bytes32 jobId) external view returns (uint64) {
         return escrows[jobId].expiresAt;
     }
+
+    /// @notice Whether anyone can refund this escrow right now: it is still
+    ///         locked and its timeout has passed. Lets the refund crank filter
+    ///         candidates off-chain before sending a batch.
+    function isRefundable(bytes32 jobId) external view returns (bool) {
+        Escrow storage escrow = escrows[jobId];
+        return escrow.status == EscrowStatus.Locked && uint64(block.timestamp) >= escrow.expiresAt;
+    }
 }
