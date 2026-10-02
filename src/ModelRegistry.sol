@@ -54,6 +54,7 @@ contract ModelRegistry is Ownable {
     );
     event ModelStatusUpdated(bytes32 indexed modelId, bool active);
     event ModelTierUpdated(bytes32 indexed modelId, uint8 oldTier, uint8 newTier);
+    event ModelDescriptionUpdated(bytes32 indexed modelId, string description);
 
     // ---------------------------------------------------------------------
     // Errors
@@ -130,5 +131,17 @@ contract ModelRegistry is Ownable {
         model.requiredTier = requiredTier;
 
         emit ModelTierUpdated(modelId, oldTier, requiredTier);
+    }
+
+    /// @notice Replace a model's catalog description, e.g. to note a new
+    ///         context window or a deprecation date.
+    function updateDescription(bytes32 modelId, string calldata description) external onlyOwner {
+        if (bytes(description).length > DESCRIPTION_MAX) revert DescriptionTooLong();
+
+        ModelEntry storage model = models[modelId];
+        if (model.registeredBy == address(0)) revert ModelNotFound();
+        model.description = description;
+
+        emit ModelDescriptionUpdated(modelId, description);
     }
 }

@@ -22,6 +22,7 @@ contract ModelRegistryTest is Test {
     );
     event ModelStatusUpdated(bytes32 indexed modelId, bool active);
     event ModelTierUpdated(bytes32 indexed modelId, uint8 oldTier, uint8 newTier);
+    event ModelDescriptionUpdated(bytes32 indexed modelId, string description);
 
     function setUp() public {
         authority = address(this);
@@ -230,5 +231,31 @@ contract ModelRegistryTest is Test {
         vm.prank(imposter);
         vm.expectRevert(Ownable.Unauthorized.selector);
         registry.registerModel(keccak256("model-imposter"), "sneaky", "nope", TIER_LITE);
+    }
+
+    function test_updatesDescription() public {
+        bytes32 modelId = keccak256("model-describe");
+        registry.registerModel(modelId, "describe-model", "old text", TIER_LITE);
+
+        vm.expectEmit(true, false, false, true);
+        emit ModelDescriptionUpdated(modelId, "new text");
+
+        registry.updateDescription(modelId, "new text");
+
+        assertEq(_model(modelId).description, "new text");
+    }
+
+    function test_rejectsDescriptionUpdateForUnknownModel() public {
+        vm.expectRevert(ModelRegistry.ModelNotFound.selector);
+        registry.updateDescription(keccak256("model-missing"), "anything");
+    }
+
+    function test_rejectsDescriptionUpdateOverMaximumLength() public {
+        bytes32 modelId = keccak256("model-long-update");
+        registry.registerModel(modelId, "long-model", "short", TIER_LITE);
+        string memory tooLong = _repeat("a", registry.DESCRIPTION_MAX() + 1);
+
+        vm.expectRevert(ModelRegistry.DescriptionTooLong.selector);
+        registry.updateDescription(modelId, tooLong);
     }
 }
