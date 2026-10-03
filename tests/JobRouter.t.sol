@@ -383,4 +383,25 @@ contract JobRouterTest is Test {
         vm.expectRevert(Ownable.Unauthorized.selector);
         router.setWorkerRegistry(address(registry));
     }
+
+    function test_isClaimable_tracksStatusAndExpiry() public {
+        bytes32 jobId = keccak256("job-claimable");
+        assertFalse(router.isClaimable(jobId));
+
+        _lockAndPost(jobId);
+        assertTrue(router.isClaimable(jobId));
+
+        vm.warp(block.timestamp + escrow.JOB_TIMEOUT_SECONDS());
+        assertFalse(router.isClaimable(jobId));
+    }
+
+    function test_isClaimable_falseOnceClaimed() public {
+        bytes32 jobId = keccak256("job-claimable-2");
+        _lockAndPost(jobId);
+
+        vm.prank(workerOwner);
+        router.claimJob(jobId);
+
+        assertFalse(router.isClaimable(jobId));
+    }
 }

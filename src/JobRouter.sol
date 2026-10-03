@@ -165,6 +165,13 @@ contract JobRouter is Ownable {
     // Helpers
     // ---------------------------------------------------------------------
 
+    /// @notice Whether a posting is open and has not expired, so worker
+    ///         nodes can skip dead jobs without simulating claimJob.
+    function isClaimable(bytes32 jobId) external view returns (bool) {
+        JobPosting storage posting = postings[jobId];
+        return posting.status == PostingStatus.Open && block.timestamp < posting.expiresAt;
+    }
+
     /// @notice Maps a model tier to its worker registry capability bit.
     function tierToMask(IJobEscrow.ModelTier tier) public pure returns (uint8) {
         return uint8(1) << uint8(tier);
