@@ -297,4 +297,22 @@ contract RewardDistributorTest is Test {
         vm.expectRevert(RewardDistributor.EpochNotFound.selector);
         dist.sweepUnclaimed(1, address(this));
     }
+
+    function test_CapsClaimsAtWhatIsLeftInTheEpoch() public {
+        _startEpochOne();
+        // A second funded epoch, so an uncapped claim would have USDG to steal.
+        dist.startEpoch(2, EPOCH_FUNDING, TOTAL_SNAPSHOT);
+
+        // staker grows past the whole epoch-1 snapshot after it was taken.
+        staking.setStake(staker, 10_000e18, TOTAL_SNAPSHOT * 2);
+
+        vm.prank(staker);
+        dist.claimReward(1);
+        assertEq(usdg.balanceOf(staker), EPOCH_FUNDING);
+        assertEq(dist.unclaimedInEpoch(2), EPOCH_FUNDING);
+
+        vm.prank(staker2);
+        vm.expectRevert(RewardDistributor.EpochExhausted.selector);
+        dist.claimReward(1);
+    }
 }

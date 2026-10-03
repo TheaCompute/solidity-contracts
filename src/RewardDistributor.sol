@@ -86,6 +86,8 @@ contract RewardDistributor is Ownable {
     error AlreadySwept();
     /// @notice Every unit of this epoch was claimed; there is nothing to sweep.
     error NothingToSweep();
+    /// @notice Every unit of this epoch has already been claimed.
+    error EpochExhausted();
 
     constructor(address usdg_) {
         usdg = IERC20(usdg_);
@@ -131,6 +133,10 @@ contract RewardDistributor is Ownable {
 
     /// @notice Any staker calls this once per epoch to receive their pro-rata
     ///         share: weightedStake * usdgDeposited / totalStakeSnapshot.
+    ///         Weights are read live, so stake added after the snapshot could
+    ///         push the sum of claims past the deposit. Each claim is capped at
+    ///         what is left in the epoch so it can never dip into USDG that
+    ///         belongs to other epochs.
     function claimReward(uint64 epochId) external {
         Epoch storage epoch = _epochs[epochId];
         if (epoch.usdgDeposited == 0) revert EpochNotFound();
@@ -144,6 +150,10 @@ contract RewardDistributor is Ownable {
 
         uint256 stakerUsdg = (weighted * epoch.usdgDeposited) / epoch.totalStakeSnapshot;
         if (stakerUsdg == 0) revert RewardTooSmall();
+
+        uint256 remaining = epoch.usdgDeposited - claimedInEpoch[epochId];
+        if (remaining == 0) revert EpochExhausted();
+        if (stakerUsdg > remaining) stakerUsdg = remaining;
 
         claim.staker = msg.sender;
         claim.epochId = epochId;
