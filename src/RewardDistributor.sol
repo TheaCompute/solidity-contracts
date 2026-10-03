@@ -202,6 +202,22 @@ contract RewardDistributor is Ownable {
         return _claims[epochId][staker];
     }
 
+    /// @notice What `staker` would receive from claiming `epochId` right now,
+    ///         or zero if they cannot claim it. Lets the dashboard show a
+    ///         payout before the staker sends a transaction.
+    function pendingReward(uint64 epochId, address staker) external view returns (uint256) {
+        Epoch storage epoch = _epochs[epochId];
+        if (epoch.usdgDeposited == 0 || epochSwept[epochId]) return 0;
+        if (_claims[epochId][staker].claimedAt != 0) return 0;
+
+        uint256 weighted = staking.weightedStake(staker);
+        if (weighted < MIN_STAKE_TO_CLAIM) return 0;
+
+        uint256 stakerUsdg = (weighted * epoch.usdgDeposited) / epoch.totalStakeSnapshot;
+        uint256 remaining = epoch.usdgDeposited - claimedInEpoch[epochId];
+        return stakerUsdg > remaining ? remaining : stakerUsdg;
+    }
+
     /// @notice USDG still unclaimed in an epoch.
     function unclaimedInEpoch(uint64 epochId) external view returns (uint256) {
         if (epochSwept[epochId]) return 0;

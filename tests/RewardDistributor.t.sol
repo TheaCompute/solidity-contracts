@@ -315,4 +315,24 @@ contract RewardDistributorTest is Test {
         vm.expectRevert(RewardDistributor.EpochExhausted.selector);
         dist.claimReward(1);
     }
+
+    function test_PendingRewardMatchesTheClaim() public {
+        _startEpochOne();
+
+        uint256 expected = (STAKER_WEIGHTED * EPOCH_FUNDING) / TOTAL_SNAPSHOT;
+        assertEq(dist.pendingReward(1, staker), expected);
+
+        vm.prank(staker);
+        dist.claimReward(1);
+
+        assertEq(usdg.balanceOf(staker), expected);
+        assertEq(dist.pendingReward(1, staker), 0);
+    }
+
+    function test_PendingRewardIsZeroWhenStakerCannotClaim() public {
+        _startEpochOne();
+
+        assertEq(dist.pendingReward(1, dust), 0);
+        assertEq(dist.pendingReward(2, staker), 0);
+    }
 }
