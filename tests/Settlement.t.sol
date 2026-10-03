@@ -526,4 +526,24 @@ contract SettlementTest is Test {
 
         assertEq(_proofRecord(jobId).worker, worker);
     }
+
+    function test_DisputeWindowOpenUntilItClosesOrIsUsed() public {
+        bytes32 jobId = bytes32(uint256(40));
+        assertFalse(settlement.isDisputeWindowOpen(jobId));
+
+        _settledLiteJob(jobId, keccak256("output"));
+        assertTrue(settlement.isDisputeWindowOpen(jobId));
+
+        vm.prank(client);
+        settlement.openDispute(jobId, keccak256("client"));
+        assertFalse(settlement.isDisputeWindowOpen(jobId));
+    }
+
+    function test_DisputeWindowClosesAfterTimeout() public {
+        bytes32 jobId = bytes32(uint256(41));
+        _settledLiteJob(jobId, keccak256("output"));
+
+        vm.warp(block.timestamp + DISPUTE_WINDOW_SECONDS + 1);
+        assertFalse(settlement.isDisputeWindowOpen(jobId));
+    }
 }

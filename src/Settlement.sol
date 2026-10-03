@@ -57,6 +57,12 @@ contract Settlement is Ownable {
         return proofRecords[jobId];
     }
 
+    /// @notice Whether the client can still open a dispute on this job.
+    function isDisputeWindowOpen(bytes32 jobId) external view returns (bool) {
+        ProofRecord storage record = proofRecords[jobId];
+        return record.settledAt != 0 && !record.disputed && uint64(block.timestamp) <= record.disputeWindowCloses;
+    }
+
     event JobSettled(
         bytes32 indexed jobId,
         address indexed worker,
